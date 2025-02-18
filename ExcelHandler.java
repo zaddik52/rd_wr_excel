@@ -5,7 +5,7 @@ import java.io.*;
 import java.util.*;
 
 public class ExcelHandler extends NanoHTTPD {
-    private static final String FILE_PATH = "list_all.xlsx";
+    private static final String FILE_PATH = "https://github.com/zaddik52/temp_chtgpt/list_all.xlsx";
 
     public ExcelHandler() throws IOException {
         super(8080);
