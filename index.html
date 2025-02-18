@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Excel Reader & Writer</title>
+</head>
+<body>
+    <h2>Read Excel Data</h2>
+    <form method="get" action="https://zaddik52.github.io/temp_chtgpt/index.html">
+        Sheet: <input type="text" name="sheet" value="Sheet1"><br>
+        <input type="hidden" name="action" value="read">
+        <input type="submit" value="Read">
+    </form>
+
+    <hr>
+
+    <h2>Write to Excel</h2>
+    <form method="get" action="https://zaddik52.github.io/temp_chtgpt/index.html">
+        Sheet: <input type="text" name="sheet" value="Sheet1"><br>
+        Cell: <input type="text" name="cell" value="A1"><br>
+        Value: <input type="text" name="value"><br>
+        <input type="hidden" name="action" value="write">
+        <input type="submit" value="Write">
+    </form>
+</body>
+</html>
