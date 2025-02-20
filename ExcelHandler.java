@@ -23,12 +23,16 @@ public class ExcelHandler extends NanoHTTPD {
     }
 
     public static void main(String[] args) {
-        try {
-            new ExcelHandler();
-        } catch (IOException e) {
-            System.err.println("Couldn't start server: " + e.getMessage());
-        }
-    }
+		try {
+			new ExcelHandler();
+			// מונע מהתוכנית להיסגר מיד
+			while (true) {
+				Thread.sleep(10000);
+			}
+		} catch (IOException | InterruptedException e) {
+        System.err.println("Couldn't start server: " + e.getMessage());
+		}
+	}
 
     @Override
     public Response serve(IHTTPSession session) {
