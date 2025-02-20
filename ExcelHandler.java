@@ -10,10 +10,10 @@ import org.json.JSONObject;
 
 public class ExcelHandler extends NanoHTTPD {
 
-    private static final String FILE_PATH = "https://raw.githubusercontent.com/zaddik52/rd_wr_excel/main/list_all.xlsx";
+    private static final String FILE_PATH = "https://github.com/zaddik52/rd_wr_excel/blob/main/list_all.xlsx";
     private static final String GITHUB_REPO = "zaddik52/rd_wr_excel";
     private static final String FILE_NAME = "list_all.xlsx";
-    private static final String GITHUB_API_URL = "https://github.com/zaddik52/rd_wr_excel/blob/main/list_all.xlsx";
+    private static final String GITHUB_API_URL = "https://rdwrexcel-production.up.railway.app/list_all.xlsx";
     private static final String GITHUB_TOKEN = System.getenv("GITHUB_TOKEN");  
 
     public ExcelHandler(int port) throws IOException {
@@ -26,9 +26,10 @@ public class ExcelHandler extends NanoHTTPD {
         try {
             int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
             new ExcelHandler(port);
-            System.out.println("Server is running...");
-            while (true) {
-                Thread.sleep(10000);
+            System.out.println("Server is running..."); 
+			
+        synchronized (ExcelHandler.class) {
+            ExcelHandler.class.wait();
             }
         } catch (Exception e) {
             System.err.println("Couldn't start server: " + e.getMessage());
