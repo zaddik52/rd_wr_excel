@@ -13,29 +13,31 @@ public class ExcelHandler extends NanoHTTPD {
     private static final String FILE_PATH = "https://raw.githubusercontent.com/zaddik52/rd_wr_excel/main/list_all.xlsx";
     private static final String GITHUB_REPO = "zaddik52/rd_wr_excel";
     private static final String FILE_NAME = "list_all.xlsx";
-    private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/contents/" + FILE_NAME;
+    private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/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/" + FILE_NAME;
     private static final String GITHUB_TOKEN = System.getenv("GITHUB_TOKEN");  
 
-    public ExcelHandler() throws IOException {
-        super(8080);
+    public ExcelHandler(int port) throws IOException {
+        super(port);
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
-        System.out.println("Server started on port 8080");
+        System.out.println("Server started on port " + port);
     }
 
     public static void main(String[] args) {
-		try {
-			new ExcelHandler();
-			// מונע מהתוכנית להיסגר מיד
-			while (true) {
-				Thread.sleep(10000);
-			}
-		} catch (IOException | InterruptedException e) {
-        System.err.println("Couldn't start server: " + e.getMessage());
-		}
-	}
+        try {
+            int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
+            new ExcelHandler(port);
+            System.out.println("Server is running...");
+            while (true) {
+                Thread.sleep(10000);
+            }
+        } catch (Exception e) {
+            System.err.println("Couldn't start server: " + e.getMessage());
+        }
+    }
 
     @Override
     public Response serve(IHTTPSession session) {
+        System.out.println("Request received: " + session.getUri());
         Map<String, String> params = session.getParms();
         String action = params.getOrDefault("action", "read");
         String sheetName = params.getOrDefault("sheet", "Sheet1");
