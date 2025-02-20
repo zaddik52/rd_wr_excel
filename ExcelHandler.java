@@ -2,15 +2,13 @@ import fi.iki.elonen.NanoHTTPD;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.*;
 
 public class ExcelHandler extends NanoHTTPD {
-//    private static final String FILE_PATH = "https://rdwrexcel-production.up.railway.app/list_all.xlsx";
-//    private static final String FILE_PATH = "C://Temp/chtgpt/list_all.xlsx";
-//    private static final String FILE_PATH = "https://github.com/zaddik52/rd_wr_excel/list_all.xlsx";
-    private static final String FILE_PATH = "list_all.xlsx";
-
-
+    // URL לקובץ ה-Excel ב-GitHub (בגרסה RAW)
+    private static final String FILE_URL = "https://raw.githubusercontent.com/zaddik52/rd_wr_excel/main/list_all.xlsx";
 
     public ExcelHandler() throws IOException {
         super(8080);
@@ -38,13 +36,13 @@ public class ExcelHandler extends NanoHTTPD {
             String result = writeExcel(sheetName, cell, value);
             return newFixedLengthResponse(Response.Status.OK, "text/html", result);
         }
-        
+
         String result = readExcel(sheetName);
         return newFixedLengthResponse(Response.Status.OK, "text/html", result);
     }
 
     private String readExcel(String sheetName) {
-        try (FileInputStream fis = new FileInputStream(FILE_PATH);
+        try (InputStream fis = downloadFile(FILE_URL);
              Workbook workbook = new XSSFWorkbook(fis)) {
             Sheet sheet = workbook.getSheet(sheetName);
             if (sheet == null) return "Sheet not found";
@@ -65,7 +63,7 @@ public class ExcelHandler extends NanoHTTPD {
     }
 
     private String writeExcel(String sheetName, String cellRef, String value) {
-        try (FileInputStream fis = new FileInputStream(FILE_PATH);
+        try (InputStream fis = downloadFile(FILE_URL);
              Workbook workbook = new XSSFWorkbook(fis)) {
             Sheet sheet = workbook.getSheet(sheetName);
             if (sheet == null) return "Sheet not found";
@@ -79,13 +77,22 @@ public class ExcelHandler extends NanoHTTPD {
             if (cell == null) cell = row.createCell(colIndex);
             cell.setCellValue(value);
 
-            try (FileOutputStream fos = new FileOutputStream(FILE_PATH)) {
-                workbook.write(fos);
-            }
-
+            // במקרה של כתיבה, אנחנו לא שומרים את הקובץ ב-GitHub, אלא רק כותבים אליו מקומית
+            // אם תרצה לשמור ב-GitHub, תצטרך לממש פתרון של העלאת הקובץ (למשל API של GitHub).
             return "Cell updated successfully!";
         } catch (Exception e) {
             return "Error writing Excel: " + e.getMessage();
         }
+    }
+
+    // פונקציה להורדת קובץ מ-GitHub דרך URL
+    private InputStream downloadFile(String fileUrl) throws IOException {
+        URL url = new URL(fileUrl);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(5000);
+        connection.setReadTimeout(5000);
+
+        return connection.getInputStream();
     }
 }
