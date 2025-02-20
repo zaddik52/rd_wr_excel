@@ -24,35 +24,45 @@ public class ExcelHandler extends NanoHTTPD {
 
     public static void main(String[] args) {
         try {
-            new ExcelHandler();
-        } catch (IOException e) {
+            ExcelHandler server = new ExcelHandler();
+            // לולאה אינסופית כדי לשמור על השרת פעיל
+            while (true) {
+                Thread.sleep(1000); // שינה ל-1 שנייה כדי למנוע עומס על המעבד
+            }
+        } catch (IOException | InterruptedException e) {
             System.err.println("Couldn't start server: " + e.getMessage());
+            e.printStackTrace(); // הדפסת שגיאה מפורטת
         }
     }
 
     @Override
     public Response serve(IHTTPSession session) {
-        Map<String, String> params = session.getParms();
-        String action = params.getOrDefault("action", "read");
-        String sheetName = params.getOrDefault("sheet", "Sheet1");
+        try {
+            Map<String, String> params = session.getParms();
+            String action = params.getOrDefault("action", "read");
+            String sheetName = params.getOrDefault("sheet", "Sheet1");
 
-        if ("/read".equals(session.getUri())) {
-            if ("read".equals(action)) {
-                String result = readExcel(sheetName);
-                return newFixedLengthResponse(Response.Status.OK, "text/html", result);
+            if ("/read".equals(session.getUri())) {
+                if ("read".equals(action)) {
+                    String result = readExcel(sheetName);
+                    return newFixedLengthResponse(Response.Status.OK, "text/html", result);
+                }
             }
-        }
 
-        if ("/write".equals(session.getUri())) {
-            if ("write".equals(action)) {
-                String cell = params.get("cell");
-                String value = params.get("value");
-                String result = writeExcel(sheetName, cell, value);
-                return newFixedLengthResponse(Response.Status.OK, "text/html", result);
+            if ("/write".equals(session.getUri())) {
+                if ("write".equals(action)) {
+                    String cell = params.get("cell");
+                    String value = params.get("value");
+                    String result = writeExcel(sheetName, cell, value);
+                    return newFixedLengthResponse(Response.Status.OK, "text/html", result);
+                }
             }
-        }
 
-        return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/html", "Page not found");
+            return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/html", "Page not found");
+        } catch (Exception e) {
+            e.printStackTrace(); // הדפסת שגיאה מפורטת
+            return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/html", "Internal server error: " + e.getMessage());
+        }
     }
 
     private String readExcel(String sheetName) {
@@ -75,6 +85,7 @@ public class ExcelHandler extends NanoHTTPD {
                 return sb.toString();
             }
         } catch (Exception e) {
+            e.printStackTrace(); // הדפסת שגיאה מפורטת
             return "Error reading Excel: " + e.getMessage();
         }
     }
@@ -105,6 +116,7 @@ public class ExcelHandler extends NanoHTTPD {
 
             return uploadToGitHub(tempFile);
         } catch (Exception e) {
+            e.printStackTrace(); // הדפסת שגיאה מפורטת
             return "Error writing Excel: " + e.getMessage();
         }
     }
@@ -147,6 +159,7 @@ public class ExcelHandler extends NanoHTTPD {
                 return "Failed to update file: HTTP " + responseCode;
             }
         } catch (Exception e) {
+            e.printStackTrace(); // הדפסת שגיאה מפורטת
             return "Error uploading file to GitHub: " + e.getMessage();
         }
     }
@@ -167,6 +180,7 @@ public class ExcelHandler extends NanoHTTPD {
             }
         } catch (Exception e) {
             System.err.println("Error fetching file SHA: " + e.getMessage());
+            e.printStackTrace(); // הדפסת שגיאה מפורטת
         }
         return null;
     }
