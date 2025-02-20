@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  <!-- כדי שהאתר יהיה רספונסיבי -->
     <title>Excel Reader & Writer</title>
 </head>
 <body>
     <h2>Read Excel Data</h2>
-    <form method="get" action="https://raw.githubusercontent.com/zaddik52/rd_wr_excel/main/list_all.xlsx">
+    <form method="get" action="https://rdwrexcel-production.up.railway.app">
         Sheet: <input type="text" name="sheet" value="Sheet1"><br>
         <input type="hidden" name="action" value="read">
         <input type="submit" value="Read">
@@ -14,7 +15,7 @@
     <hr>
 
     <h2>Write to Excel</h2>
-    <form method="get" action="https://raw.githubusercontent.com/zaddik52/rd_wr_excel/main/list_all.xlsx">
+    <form method="get" action="https://rdwrexcel-production.up.railway.app">
         Sheet: <input type="text" name="sheet" value="Sheet1"><br>
         Cell: <input type="text" name="cell" value="A1"><br>
         Value: <input type="text" name="value"><br>
