@@ -42,7 +42,7 @@ public class ExcelHandler extends NanoHTTPD {
     }
 
     private String readExcel(String sheetName) {
-        try (InputStream fis = downloadFile(FILE_URL);
+        try (InputStream fis = downloadFile(FILE_URL); // קריאה ישירה לקובץ מ-GitHub
              Workbook workbook = new XSSFWorkbook(fis)) {
             Sheet sheet = workbook.getSheet(sheetName);
             if (sheet == null) return "Sheet not found";
@@ -92,7 +92,8 @@ public class ExcelHandler extends NanoHTTPD {
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(5000);
-
+        connection.setDoOutput(true); // מאפשר קריאה לקובץ מבלי להוריד אותו למחשב
+        connection.connect();
         return connection.getInputStream();
     }
 }
