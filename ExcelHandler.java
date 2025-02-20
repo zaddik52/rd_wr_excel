@@ -8,12 +8,12 @@ import java.util.*;
 
 public class ExcelHandler extends NanoHTTPD {
 
-    private static final String FILE_URL = "https://raw.githubusercontent.com/zaddik52/rd_wr_excel/main/list_all.xlsx";
+    private static final String FILE_PATH = "https://raw.githubusercontent.com/zaddik52/rd_wr_excel/main/list_all.xlsx";
 
     public ExcelHandler() throws IOException {
-        super(8080);
+        super(8080);  // אם זה ב-RAILWAY, נשתמש ב-Port אחר אם יש צורך
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
-        System.out.println("Server started on 8080");
+        System.out.println("Server started on port 8080");
     }
 
     public static void main(String[] args) {
@@ -30,16 +30,27 @@ public class ExcelHandler extends NanoHTTPD {
         String action = params.getOrDefault("action", "read");
         String sheetName = params.getOrDefault("sheet", "Sheet1");
 
-        if ("read".equals(action)) {
-            String result = readExcel(sheetName);
-            return newFixedLengthResponse(Response.Status.OK, "text/html", result);
-        } else {
-            return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/html", "Invalid action");
+        if ("/read".equals(session.getUri())) {
+            if ("read".equals(action)) {
+                String result = readExcel(sheetName);
+                return newFixedLengthResponse(Response.Status.OK, "text/html", result);
+            }
         }
+
+        if ("/write".equals(session.getUri())) {
+            if ("write".equals(action)) {
+                String cell = params.get("cell");
+                String value = params.get("value");
+                String result = writeExcel(sheetName, cell, value);
+                return newFixedLengthResponse(Response.Status.OK, "text/html", result);
+            }
+        }
+
+        return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/html", "Page not found");
     }
 
     private String readExcel(String sheetName) {
-        try (InputStream fis = downloadFile(FILE_URL);
+        try (InputStream fis = new FileInputStream(FILE_PATH);
              Workbook workbook = new XSSFWorkbook(fis)) {
             Sheet sheet = workbook.getSheet(sheetName);
             if (sheet == null) return "Sheet not found";
@@ -59,12 +70,29 @@ public class ExcelHandler extends NanoHTTPD {
         }
     }
 
-    private InputStream downloadFile(String fileUrl) throws IOException {
-        URL url = new URL(fileUrl);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
-        return connection.getInputStream();
+    private String writeExcel(String sheetName, String cellRef, String value) {
+        try (InputStream fis = new FileInputStream(FILE_PATH);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheet(sheetName);
+            if (sheet == null) return "Sheet not found";
+
+            int rowIndex = cellRef.charAt(1) - '1';
+            int colIndex = cellRef.charAt(0) - 'A';
+
+            Row row = sheet.getRow(rowIndex);
+            if (row == null) row = sheet.createRow(rowIndex);
+            Cell cell = row.getCell(colIndex);
+            if (cell == null) cell = row.createCell(colIndex);
+            cell.setCellValue(value);
+
+            // לשמירה של הקובץ, עליך לשמור אותו מחדש ב-RAILWAY
+            try (FileOutputStream fileOut = new FileOutputStream(FILE_PATH)) {
+                workbook.write(fileOut);
+            }
+
+            return "Cell updated successfully!";
+        } catch (Exception e) {
+            return "Error writing Excel: " + e.getMessage();
+        }
     }
 }
