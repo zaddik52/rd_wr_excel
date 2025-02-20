@@ -13,7 +13,7 @@ public class ExcelHandler extends NanoHTTPD {
     private static final String FILE_PATH = "https://raw.githubusercontent.com/zaddik52/rd_wr_excel/main/list_all.xlsx";
     private static final String GITHUB_REPO = "zaddik52/rd_wr_excel";
     private static final String FILE_NAME = "list_all.xlsx";
-    private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/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/" + FILE_NAME;
+    private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/GITHUB_TOKEN/" + FILE_NAME;
     private static final String GITHUB_TOKEN = System.getenv("GITHUB_TOKEN");  
 
     public ExcelHandler(int port) throws IOException {
