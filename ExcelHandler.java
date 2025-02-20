@@ -16,22 +16,16 @@ public class ExcelHandler extends NanoHTTPD {
     private static final String GITHUB_API_URL = "https://rdwrexcel-production.up.railway.app/list_all.xlsx";
     private static final String GITHUB_TOKEN = System.getenv("GITHUB_TOKEN");  
 
-    public ExcelHandler(int port) throws IOException {
-        super(port);
+    public ExcelHandler() throws IOException {
+        super(8080);
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
-        System.out.println("Server started on port " + port);
+        System.out.println("Server started on 8080");
     }
 
     public static void main(String[] args) {
         try {
-            int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
-            new ExcelHandler(port);
-            System.out.println("Server is running..."); 
-			
-        synchronized (ExcelHandler.class) {
-            ExcelHandler.class.wait();
-            }
-        } catch (Exception e) {
+            new ExcelHandler();
+        } catch (IOException e) {
             System.err.println("Couldn't start server: " + e.getMessage());
         }
     }
