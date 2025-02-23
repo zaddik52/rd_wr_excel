@@ -2,15 +2,17 @@ import fi.iki.elonen.NanoHTTPD;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
+import java.net.URL;
 import java.util.*;
 
 public class ExcelHandler extends NanoHTTPD {
-    private static final String FILE_PATH = "C://Temp/local/list_all.xlsx";
+    private static final String FILE_URL = "https://raw.githubusercontent.com/zaddik52/rd_wr_excel/main/list_all.xlsx";
+    private static final String LOCAL_FILE_PATH = "/tmp/list_all.xlsx";
 
     public ExcelHandler() throws IOException {
         super(8080);
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
-        System.out.println("Server started on http://localhost:8080");
+        System.out.println("Server started on https://rdwrexcel-production.up.railway.app");
     }
 
     public static void main(String[] args) {
@@ -29,17 +31,34 @@ public class ExcelHandler extends NanoHTTPD {
         String cell = params.getOrDefault("cell", "A1");
         String value = params.get("value");
 
+        try {
+            downloadExcel(); // לוודא שהקובץ קיים לפני כל פעולה
+        } catch (IOException e) {
+            return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/html", "Error downloading Excel: " + e.getMessage());
+        }
+
         if ("write".equals(action) && value != null) {
             String result = writeExcel(sheetName, cell, value);
             return newFixedLengthResponse(Response.Status.OK, "text/html", result);
         }
-        
+
         String result = readExcel(sheetName);
         return newFixedLengthResponse(Response.Status.OK, "text/html", result);
     }
 
+    private void downloadExcel() throws IOException {
+        try (InputStream in = new URL(FILE_URL).openStream();
+             FileOutputStream fos = new FileOutputStream(LOCAL_FILE_PATH)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                fos.write(buffer, 0, bytesRead);
+            }
+        }
+    }
+
     private String readExcel(String sheetName) {
-        try (FileInputStream fis = new FileInputStream(FILE_PATH);
+        try (FileInputStream fis = new FileInputStream(LOCAL_FILE_PATH);
              Workbook workbook = new XSSFWorkbook(fis)) {
             Sheet sheet = workbook.getSheet(sheetName);
             if (sheet == null) return "Sheet not found";
@@ -60,7 +79,7 @@ public class ExcelHandler extends NanoHTTPD {
     }
 
     private String writeExcel(String sheetName, String cellRef, String value) {
-        try (FileInputStream fis = new FileInputStream(FILE_PATH);
+        try (FileInputStream fis = new FileInputStream(LOCAL_FILE_PATH);
              Workbook workbook = new XSSFWorkbook(fis)) {
             Sheet sheet = workbook.getSheet(sheetName);
             if (sheet == null) return "Sheet not found";
@@ -74,7 +93,7 @@ public class ExcelHandler extends NanoHTTPD {
             if (cell == null) cell = row.createCell(colIndex);
             cell.setCellValue(value);
 
-            try (FileOutputStream fos = new FileOutputStream(FILE_PATH)) {
+            try (FileOutputStream fos = new FileOutputStream(LOCAL_FILE_PATH)) {
                 workbook.write(fos);
             }
 
