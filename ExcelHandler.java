@@ -2,186 +2,85 @@ import fi.iki.elonen.NanoHTTPD;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Base64;
-import java.util.Map;
-import org.json.JSONObject;
+import java.util.*;
 
 public class ExcelHandler extends NanoHTTPD {
-
-    private static final String FILE_PATH = "https://raw.githubusercontent.com/zaddik52/rd_wr_excel/main/list_all.xlsx";
-    private static final String GITHUB_REPO = "zaddik52/rd_wr_excel";
-    private static final String FILE_NAME = "list_all.xlsx";
-    private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/contents/" + FILE_NAME;
-    private static final String GITHUB_TOKEN = System.getenv("GITHUB_TOKEN");  // יש להגדיר משתנה סביבה!
+    private static final String FILE_PATH = "C://Temp/local/list_all.xlsx";
 
     public ExcelHandler() throws IOException {
         super(8080);
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
-        System.out.println("Server started on port 8080");
+        System.out.println("Server started on http://localhost:8080");
     }
 
     public static void main(String[] args) {
         try {
-            ExcelHandler server = new ExcelHandler();
-            // לולאה אינסופית כדי לשמור על השרת פעיל
-            while (true) {
-                Thread.sleep(1000); // שינה ל-1 שנייה כדי למנוע עומס על המעבד
-            }
-        } catch (IOException | InterruptedException e) {
+            new ExcelHandler();
+        } catch (IOException e) {
             System.err.println("Couldn't start server: " + e.getMessage());
-            e.printStackTrace(); // הדפסת שגיאה מפורטת
         }
     }
 
     @Override
     public Response serve(IHTTPSession session) {
-        try {
-            Map<String, String> params = session.getParms();
-            String action = params.getOrDefault("action", "read");
-            String sheetName = params.getOrDefault("sheet", "Sheet1");
+        Map<String, String> params = session.getParms();
+        String action = params.getOrDefault("action", "read");
+        String sheetName = params.getOrDefault("sheet", "Sheet1");
+        String cell = params.getOrDefault("cell", "A1");
+        String value = params.get("value");
 
-            if ("/read".equals(session.getUri())) {
-                if ("read".equals(action)) {
-                    String result = readExcel(sheetName);
-                    return newFixedLengthResponse(Response.Status.OK, "text/html", result);
-                }
-            }
-
-            if ("/write".equals(session.getUri())) {
-                if ("write".equals(action)) {
-                    String cell = params.get("cell");
-                    String value = params.get("value");
-                    String result = writeExcel(sheetName, cell, value);
-                    return newFixedLengthResponse(Response.Status.OK, "text/html", result);
-                }
-            }
-
-            return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/html", "Page not found");
-        } catch (Exception e) {
-            e.printStackTrace(); // הדפסת שגיאה מפורטת
-            return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/html", "Internal server error: " + e.getMessage());
+        if ("write".equals(action) && value != null) {
+            String result = writeExcel(sheetName, cell, value);
+            return newFixedLengthResponse(Response.Status.OK, "text/html", result);
         }
+        
+        String result = readExcel(sheetName);
+        return newFixedLengthResponse(Response.Status.OK, "text/html", result);
     }
 
     private String readExcel(String sheetName) {
-        try {
-            URL url = new URL(FILE_PATH);
-            try (InputStream fis = url.openStream();
-                 Workbook workbook = new XSSFWorkbook(fis)) {
-                Sheet sheet = workbook.getSheet(sheetName);
-                if (sheet == null) return "Sheet not found";
+        try (FileInputStream fis = new FileInputStream(FILE_PATH);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheet(sheetName);
+            if (sheet == null) return "Sheet not found";
 
-                StringBuilder sb = new StringBuilder("<table border='1'>");
-                for (Row row : sheet) {
-                    sb.append("<tr>");
-                    for (Cell cell : row) {
-                        sb.append("<td>").append(cell.toString()).append("</td>");
-                    }
-                    sb.append("</tr>");
+            StringBuilder sb = new StringBuilder("<table border='1'>");
+            for (Row row : sheet) {
+                sb.append("<tr>");
+                for (Cell cell : row) {
+                    sb.append("<td>").append(cell.toString()).append("</td>");
                 }
-                sb.append("</table>");
-                return sb.toString();
+                sb.append("</tr>");
             }
+            sb.append("</table>");
+            return sb.toString();
         } catch (Exception e) {
-            e.printStackTrace(); // הדפסת שגיאה מפורטת
             return "Error reading Excel: " + e.getMessage();
         }
     }
 
     private String writeExcel(String sheetName, String cellRef, String value) {
-        try {
-            URL url = new URL(FILE_PATH);
-            File tempFile = File.createTempFile("tempExcel", ".xlsx");
+        try (FileInputStream fis = new FileInputStream(FILE_PATH);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheet(sheetName);
+            if (sheet == null) return "Sheet not found";
 
-            try (InputStream fis = url.openStream();
-                 Workbook workbook = new XSSFWorkbook(fis);
-                 FileOutputStream fos = new FileOutputStream(tempFile)) {
+            int rowIndex = cellRef.charAt(1) - '1';
+            int colIndex = cellRef.charAt(0) - 'A';
 
-                Sheet sheet = workbook.getSheet(sheetName);
-                if (sheet == null) return "Sheet not found";
+            Row row = sheet.getRow(rowIndex);
+            if (row == null) row = sheet.createRow(rowIndex);
+            Cell cell = row.getCell(colIndex);
+            if (cell == null) cell = row.createCell(colIndex);
+            cell.setCellValue(value);
 
-                int rowIndex = cellRef.charAt(1) - '1';
-                int colIndex = cellRef.charAt(0) - 'A';
-
-                Row row = sheet.getRow(rowIndex);
-                if (row == null) row = sheet.createRow(rowIndex);
-                Cell cell = row.getCell(colIndex);
-                if (cell == null) cell = row.createCell(colIndex);
-                cell.setCellValue(value);
-
+            try (FileOutputStream fos = new FileOutputStream(FILE_PATH)) {
                 workbook.write(fos);
             }
 
-            return uploadToGitHub(tempFile);
+            return "Cell updated successfully!";
         } catch (Exception e) {
-            e.printStackTrace(); // הדפסת שגיאה מפורטת
             return "Error writing Excel: " + e.getMessage();
         }
-    }
-
-    private String uploadToGitHub(File file) {
-        try {
-            // קריאת תוכן הקובץ והמרתו ל-Base64
-            byte[] fileBytes = new byte[(int) file.length()];
-            try (FileInputStream fis = new FileInputStream(file)) {
-                fis.read(fileBytes);
-            }
-            String encodedContent = Base64.getEncoder().encodeToString(fileBytes);
-
-            // מקבלים את ה-SHA הנוכחי של הקובץ ב-GitHub
-            String sha = getFileSHA();
-
-            // בניית JSON לבקשת PUT
-            JSONObject json = new JSONObject();
-            json.put("message", "Updating Excel file");
-            json.put("content", encodedContent);
-            if (sha != null) {
-                json.put("sha", sha);
-            }
-
-            // שליחת בקשת PUT ל-GitHub API
-            HttpURLConnection conn = (HttpURLConnection) new URL(GITHUB_API_URL).openConnection();
-            conn.setRequestMethod("PUT");
-            conn.setRequestProperty("Authorization", "token " + GITHUB_TOKEN);
-            conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
-            conn.setDoOutput(true);
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(json.toString().getBytes());
-            }
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode == 200 || responseCode == 201) {
-                return "File updated successfully!";
-            } else {
-                return "Failed to update file: HTTP " + responseCode;
-            }
-        } catch (Exception e) {
-            e.printStackTrace(); // הדפסת שגיאה מפורטת
-            return "Error uploading file to GitHub: " + e.getMessage();
-        }
-    }
-
-    private String getFileSHA() {
-        try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(GITHUB_API_URL).openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Authorization", "token " + GITHUB_TOKEN);
-            conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
-
-            if (conn.getResponseCode() == 200) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                    String response = reader.lines().reduce("", String::concat);
-                    JSONObject json = new JSONObject(response);
-                    return json.getString("sha");
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error fetching file SHA: " + e.getMessage());
-            e.printStackTrace(); // הדפסת שגיאה מפורטת
-        }
-        return null;
     }
 }
